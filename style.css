@@ -1,0 +1,296 @@
+/* Tối ưu tổng thể để không bao giờ bị tràn chiều cao */
+body,
+html {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  width: 100vw;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  background: #ecf0f1; /* Giữ màu nền cũ */
+  overflow: hidden; /* Tuyệt đối không hiện cuộn trang */
+}
+
+#main-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+/* Chia đôi màn hình */
+#left-panel {
+  width: 50%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  box-sizing: border-box;
+  gap: 8px;
+}
+
+#right-panel {
+  width: 50%;
+  height: 100%;
+  background: #fff;
+}
+
+/* Hàng trên: Sidebar + Log */
+.top-row {
+  display: flex;
+  height: 60%;
+  gap: 8px;
+}
+
+/* Các ô Box - Sử dụng màu và shadow của Sidebar cũ */
+#sidebar,
+#log-panel,
+#data-panel {
+  background: #2c3e50; /* Màu nền xanh đen cũ */
+  color: white;
+  border-radius: 8px;
+  padding: 10px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.2); /* Shadow của code cũ */
+}
+
+#sidebar {
+  width: 42%;
+}
+#log-panel {
+  width: 58%;
+}
+
+/* Ô biểu diễn dữ liệu phía dưới */
+#data-panel {
+  height: 40%;
+  flex: 1;
+}
+
+/* Tiêu đề - Màu xanh dương của code cũ */
+h2 {
+  text-align: center;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+  font-size: 16px;
+}
+
+.group {
+  margin-bottom: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.input-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+input {
+  width: 40px;
+  padding: 3px;
+  border-radius: 4px;
+  border: none;
+  text-align: center;
+}
+
+/* Button mặc định - Màu xanh xám của code cũ */
+button {
+  padding: 6px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  background: #34495e;
+  color: white;
+  font-size: 11px;
+  transition: all 0.2s;
+}
+
+button:hover {
+  background: #5d6d7e;
+  transform: translateY(-1px); /* Hiệu ứng nổi lên của code cũ */
+}
+
+/* Button Active - Màu xanh sáng và shadow của code cũ */
+button.active {
+  background: #3498db;
+  box-shadow: 0 0 10px #3498db;
+}
+
+/* Chỉnh chung cho tất cả các thanh chọn */
+select {
+  width: 100%; /* Dài bằng khung sidebar */
+  padding: 3px; /* Độ dày vừa phải */
+  border-radius: 4px;
+  border: 1px solid #34495e;
+  background: #ffffff;
+  color: #2c3e50;
+  font-size: 12px; /* Chữ nhỏ gọn */
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 2px;
+}
+
+/* Nếu muốn chỉnh riêng thanh Loại đồ thị */
+#graphType {
+  border-left: 3px solid #27ae60;
+}
+
+/* Nếu muốn chỉnh riêng thanh Chế độ chạy */
+#runMode {
+  border-left: 3px solid #27ae60;
+}
+
+/* Các nút chức năng - Màu sắc chuẩn của code cũ */
+.run-btn {
+  background: #27ae60 !important;
+}
+.app-btn {
+  background: #8e44ad !important;
+}
+.path-btn {
+  background: #e67e22 !important;
+}
+.reset-btn {
+  background: #c0392b !important;
+  padding: 5px;
+  margin-top: 5px;
+}
+.sample-btn {
+  background: #f1e60f !important;
+  color: #2c3e50 !important;
+}
+
+/* Ô Trạng thái - Màu tối và viền xanh của code cũ */
+#status-box {
+  background: #1a252f;
+  padding: 6px;
+  border-radius: 5px;
+  font-size: 12px;
+  border-left: 4px solid #27ae60; /* Viền xanh đặc trưng */
+}
+
+/* Header cho Stack và Log - Màu xanh sáng */
+#stack-container b,
+#log-container b,
+#data-panel b {
+  color: #ffffff;
+  font-size: 18px;
+}
+
+/* FIX co giãn và màu sắc các vùng nội dung */
+#stack-container,
+#log-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin-bottom: 4px;
+}
+
+/* Vùng hiển thị Stack/Log - Border và màu nền của code cũ */
+#stack-visual,
+#log-box,
+#data-display {
+  flex: 1;
+  margin-top: 2px;
+  border-radius: 4px;
+  padding: 5px;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+#stack-visual {
+  background: #243342; /* Màu nền stack cũ */
+  border: 2px solid #3e4f5f; /* Border cũ */
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+}
+
+#log-box {
+  margin-top: 2px;
+  height: 150px; /* Lưu ý: Nếu dùng bản chống tràn thì dòng này sẽ là flex: 1 */
+  background: #1a1a1a;
+  color: #2ecc71;
+  font-family: monospace;
+  font-size: 14px;
+  padding: 8px;
+  border-radius: 4px;
+  overflow-y: auto;
+  border: 1px solid #444;
+  text-align: left;
+}
+
+#data-display {
+  background: #1a1a1a;
+  color: #f1c40f; /* Chữ vàng log highlight của code cũ */
+  margin-top: 4px;
+  font-family: monospace;
+  font-size: 14px;
+  line-height: 1.2;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+/* Item trong Stack - Màu cam và border xanh của code cũ */
+.stack-item {
+  background: #e67e22;
+  color: #ecf0f1;
+  padding: 3px;
+  text-align: center;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 14px;
+  animation: pushAnim 0.3s ease; /* Animation đẩy cũ */
+}
+
+@keyframes pushAnim {
+  from {
+    transform: translateX(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.tab-buttons {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+.tab-buttons button {
+  padding: 3px 6px;
+  font-size: 11px;
+}
+
+#canvas-parent {
+  width: 100%;
+  height: 100vh; /* Khóa chiều cao bằng đúng màn hình */
+  position: relative;
+  overflow: hidden; /* Cực kỳ quan trọng: không cho canvas đẩy khung */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+}
+
+canvas {
+  display: block; /* Xóa khoảng trắng thừa phía dưới canvas */
+}
+
+/* Thanh cuộn - Màu xanh của code cũ */
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-thumb {
+  background: #3498db;
+  border-radius: 10px;
+}

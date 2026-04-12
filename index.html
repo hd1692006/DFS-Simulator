@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>DFS SIMULATOR</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="main-container">
+      <div id="left-panel">
+        <div class="top-row">
+          <div id="sidebar">
+            <h2>DFS SIMULATOR</h2>
+            <div class="group">
+              <button id="nodeBtn" class="active" onclick="setMode('node')">
+                ➕ Thêm Đỉnh
+              </button>
+              <button id="edgeBtn" onclick="setMode('edge')">
+                🔗 Thêm Cạnh
+              </button>
+              <select id="graphType" onchange="changeGraphType()">
+                <option value="undirected">Đồ thị vô hướng</option>
+                <option value="directed">Đồ thị có hướng</option>
+              </select>
+              <button class="sample-btn" onclick="loadSampleGraph()">
+                📚 Đồ thị mẫu
+              </button>
+            </div>
+
+            <div class="group">
+              <label style="font-size: 13px">Chế độ chạy:</label>
+              <select
+                id="runMode"
+                onchange="toggleSpeedControl()"
+                style="padding: 5px; border-radius: 4px"
+              >
+                <option value="step">Step-by-step</option>
+                <option value="auto">Auto</option>
+              </select>
+              <div
+                id="speedControl"
+                style="
+                  display: none;
+                  margin-top: 5px;
+                  background: rgba(0, 0, 0, 0.2);
+                  padding: 5px;
+                  border-radius: 4px;
+                "
+              >
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <span
+                    style="font-size: 10px; color: #f1c40f; white-space: nowrap"
+                    >Chậm</span
+                  >
+                  <input
+                    type="range"
+                    id="runSpeed"
+                    min="100"
+                    max="2000"
+                    value="1000"
+                    style="flex: 1; height: 4px; cursor: pointer"
+                  />
+                  <span
+                    style="font-size: 10px; color: #f1c40f; white-space: nowrap"
+                    >Nhanh</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="group">
+              <div class="input-row">
+                <label>Gốc (S):</label>
+                <input type="number" id="startNode" value="1" />
+              </div>
+              <div class="input-row">
+                <label>Đích (E):</label>
+                <input type="number" id="endNode" value="3" />
+              </div>
+              <button class="run-btn" onclick="startDFS()">🚀 Chạy DFS</button>
+              <button class="app-btn" onclick="findComponents()">
+                🎨 Tìm TP liên thông
+              </button>
+              <button class="path-btn" onclick="findPath()">
+                🚩 Tìm đường đi
+              </button>
+            </div>
+          </div>
+
+          <div id="log-panel">
+            <div id="status-box">
+              <b>Trạng thái:</b><br /><span id="statusText">Sẵn sàng</span>
+            </div>
+            <div id="stack-container">
+              <b>Stack (LIFO):</b>
+              <div id="stack-visual"></div>
+            </div>
+            <div id="log-container">
+              <b>Nhật ký hệ thống:</b>
+              <div id="log-box"></div>
+            </div>
+            <button class="reset-btn" onclick="resetGraph()">
+              🔄 Xóa toàn bộ
+            </button>
+          </div>
+        </div>
+
+        <div id="data-panel">
+          <b>📊 Biểu diễn đồ thị:</b>
+          <div class="tab-buttons">
+            <button onclick="updateDataView('matrix')">Ma trận kề</button>
+            <button onclick="updateDataView('incidence')">
+              Ma trận liên thông
+            </button>
+            <button onclick="updateDataView('adjList')">Danh sách kề</button>
+            <button onclick="updateDataView('edgeList')">Danh sách cạnh</button>
+          </div>
+          <pre id="data-display">Hãy tạo đồ thị để xem dữ liệu...</pre>
+        </div>
+      </div>
+
+      <div id="right-panel">
+        <main id="canvas-parent"></main>
+      </div>
+    </div>
+    <script src="sketch.js"></script>
+  </body>
+</html>
