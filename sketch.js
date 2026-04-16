@@ -257,7 +257,7 @@ function updateDataView(type = "matrix") {
       content += row.join(" ") + "\n";
     }
   } else if (type === "incidence") {
-    // content = `MA TRẬN LIÊN THÔNG:\n${n} ${m}\n`;
+    // content = `MA TRẬN LIÊN THUỘC:\n${n} ${m}\n`;
     for (let i = 1; i <= n; i++) {
       let row = [];
       for (let j = 0; j < m; j++) {
