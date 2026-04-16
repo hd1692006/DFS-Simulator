@@ -155,10 +155,17 @@ select {
 .path-btn {
   background: #e67e22 !important;
 }
+/* Tìm hoặc thêm đoạn này vào style.css */
 .reset-btn {
-  background: #c0392b !important;
-  padding: 5px;
-  margin-top: 5px;
+  background-color: #e74c3c; /* Màu đỏ của nút xóa cũ */
+  color: white;
+  border: none;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.3s;
+  font-size: 12px;
 }
 .sample-btn {
   background: #f1e60f !important;
@@ -206,11 +213,26 @@ select {
 }
 
 #stack-visual {
-  background: #243342; /* Màu nền stack cũ */
-  border: 2px solid #3e4f5f; /* Border cũ */
+  background: #243342;
+  border: 2px solid #3e4f5f;
   display: flex;
-  flex-direction: column-reverse;
-  gap: 2px;
+  flex-direction: row; /* Xếp hàng ngang từ trái qua phải  */
+  flex-wrap: wrap; /* Tự xuống dòng nếu quá nhiều đỉnh */
+  align-items: center; /* Căn giữa theo chiều dọc */
+  gap: 5px; /* Khoảng cách giữa các đỉnh */
+  overflow-x: auto; /* Hiện scroll ngang nếu cần */
+}
+
+/* Item trong Stack - Màu cam và border xanh của code cũ */
+.stack-item {
+  background: #e67e22;
+  color: #ecf0f1;
+  padding: 2px 8px;
+  text-align: center;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 20px;
+  animation: pushAnim 0.3s ease; /* Animation đẩy cũ */
 }
 
 #log-box {
@@ -236,18 +258,6 @@ select {
   line-height: 1.2;
   padding: 10px;
   border-radius: 4px;
-}
-
-/* Item trong Stack - Màu cam và border xanh của code cũ */
-.stack-item {
-  background: #e67e22;
-  color: #ecf0f1;
-  padding: 3px;
-  text-align: center;
-  border-radius: 3px;
-  font-family: monospace;
-  font-size: 14px;
-  animation: pushAnim 0.3s ease; /* Animation đẩy cũ */
 }
 
 @keyframes pushAnim {
