@@ -815,7 +815,7 @@ async function findComponents() {
     }
   }
   let resultText = allComponents
-    .map((comp) => `{${comp.sort((a, b) => a - b).join(",")}}`)
+    .map((comp) => `{${comp.join(", ")}}`)
     .join(", ");
   updateStatus(`Tổng: ${count} thành phần liên thông: ${resultText}`);
   addLog(`Tổng: ${count} thành phần liên thông`, true);
