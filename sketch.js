@@ -24,12 +24,16 @@ async function animateTravel(fromId, toId) {
 
   let steps = 30;
   for (let i = 0; i <= steps; i++) {
+    if (!isRunning) return;
     let t = i / steps;
     traveler.x = lerp(startNode.x, endNode.x, t);
     traveler.y = lerp(startNode.y, endNode.y, t);
     await new Promise((res) => setTimeout(res, 20));
   }
-
+  if (!isRunning) {
+    traveler.active = false;
+    return;
+  }
   traveler.active = false;
   traveler.currentId = toId; // Đã đến đích, đứng yên tại đây
 }
@@ -42,6 +46,10 @@ function setup() {
   cnv.parent("canvas-parent");
   textAlign(CENTER, CENTER);
   textSize(16);
+  let btn = document.getElementById("stopBtn");
+  if (btn) {
+    btn.onclick = stopAlgorithm;
+  }
 }
 
 function windowResized() {
@@ -243,7 +251,7 @@ function updateDataView(type = "matrix") {
   let content = "";
 
   if (type === "matrix") {
-    // content = `MA TRẬN KỀ:\n${n}\n`;
+    content = `MA TRẬN KỀ:\n`;
     for (let i = 1; i <= n; i++) {
       let row = [];
       for (let j = 1; j <= n; j++) {
@@ -257,7 +265,7 @@ function updateDataView(type = "matrix") {
       content += row.join(" ") + "\n";
     }
   } else if (type === "incidence") {
-    // content = `MA TRẬN LIÊN THUỘC:\n${n} ${m}\n`;
+    content = `MA TRẬN LIÊN THUỘC:\n`;
     for (let i = 1; i <= n; i++) {
       let row = [];
       for (let j = 0; j < m; j++) {
@@ -273,7 +281,7 @@ function updateDataView(type = "matrix") {
       content += row.join(" ") + "\n";
     }
   } else if (type === "adjList") {
-    // content = `DANH SÁCH KỀ:\n${n}\n`;
+    content = `DANH SÁCH KỀ:\n`;
     nodes.forEach((node) => {
       let neighbors = [];
       edges.forEach((e) => {
@@ -285,7 +293,7 @@ function updateDataView(type = "matrix") {
       content += `${node.id}: ${neighborsText}\n`;
     });
   } else if (type === "edgeList") {
-    // content = `DANH SÁCH CẠNH:\n${n} ${m}\n`;
+    content = `DANH SÁCH CẠNH:\n`;
     let displayEdges = [];
 
     if (!isDirected) {
@@ -330,216 +338,153 @@ function updateDataView(type = "matrix") {
 function loadSampleGraph() {
   if (isRunning) return;
 
-  let mode = prompt(
-    "Chọn cách tạo đồ thị:\n1. Sinh từ genDataStatistic.py \n2. Sinh ngẫu nhiên\nNhập 1 hoặc 2:",
-  );
+  let input = prompt("Nhập số lượng đỉnh muốn tạo cho đồ thị:");
+  if (input === null) return;
 
-  if (mode === "1") {
-    let numVertices = prompt(
-      "Nhập số đỉnh để sinh đồ thị (Chọn số chẵn >= 4):",
-    );
-    if (numVertices === null) return;
-
-    let n = parseInt(numVertices);
-    if (isNaN(n) || n < 4) {
-      alert("Vui lòng nhập số chẵn lớn hơn hoặc bằng 4!");
-      return;
-    }
-
-    alert("Hãy chạy genDataStatistic.py để sinh đồ thị với " + n + " đỉnh");
-
-    loadJSON(
-      "graph_data.json?t=" + Date.now(),
-      function (dataFromFile) {
-        if (!dataFromFile.nodes || dataFromFile.nodes.length === 0) return;
-
-        nodes = [];
-        edges = [];
-
-        let minX = Infinity,
-          maxX = -Infinity,
-          minY = Infinity,
-          maxY = -Infinity;
-        dataFromFile.nodes.forEach((node) => {
-          if (node.x < minX) minX = node.x;
-          if (node.x > maxX) maxX = node.x;
-          if (node.y < minY) minY = node.y;
-          if (node.y > maxY) maxY = node.y;
-        });
-
-        let graphW = maxX - minX || 1;
-        let graphH = maxY - minY || 1;
-
-        const paddingTop = 150;
-        const paddingSide = 60;
-        const paddingBottom = 60;
-
-        let availableW = width - paddingSide * 2;
-        let availableH = height - paddingTop - paddingBottom;
-
-        let scaleX = availableW / graphW;
-        let scaleY = availableH / graphH;
-        const autoScale = Math.min(scaleX, scaleY);
-
-        let startX = paddingSide + (availableW - graphW * autoScale) / 2;
-        let startY = paddingTop + (availableH - graphH * autoScale) / 2;
-
-        dataFromFile.nodes.forEach((n) => {
-          nodes.push({
-            id: n.id,
-            x: (n.x - minX) * autoScale + startX,
-            y: (n.y - minY) * autoScale + startY,
-            color: "#ffffff",
-          });
-        });
-
-        dataFromFile.edges.forEach((e) => {
-          edges.push({ u: e.u, v: e.v });
-        });
-
-        rebuildGraph();
-        if (nodes.length > 0) playerPos = { x: nodes[0].x, y: nodes[0].y };
-        addLog(
-          `Đã nạp đồ thị ${dataFromFile.nodes.length} đỉnh sau khi chạy genDataStatistic.py`,
-          true,
-        );
-      },
-      function (err) {
-        alert("Không tìm thấy file graph_data.json!");
-      },
-    );
-  } else if (mode === "2") {
-    nodes = [];
-    edges = [];
-
-    // 1. Số đỉnh ngẫu nhiên (8-16)
-    let n = floor(random(8, 17));
-
-    // --- 2. TÍNH TÂM VÙNG TRẮNG ---
-    let centerX = width / 2;
-    let centerY = height / 2 + 50;
-
-    // 🔥 3. KHỞI TẠO ĐỈNH (Dùng Grid ảo để thưa ngay từ đầu)
-    let cols = 5;
-    let rows = 4;
-    let slots = [];
-    for (let c = 0; c < cols; c++) {
-      for (let r = 0; r < rows; r++) slots.push({ c, r });
-    }
-    slots.sort(() => Math.random() - 0.5);
-
-    for (let i = 0; i < n; i++) {
-      let slot = slots[i % slots.length];
-      nodes.push({
-        id: i + 1,
-        x: centerX + (slot.c - 2) * (width / 7) + random(-40, 40),
-        y: centerY + (slot.r - 1.5) * (height / 6) + random(-40, 40),
-        color: "#ffffff",
-        vx: 0,
-        vy: 0,
-      });
-    }
-
-    // 🔥 4. THUẬT TOÁN LỰC ĐẨY (ÉP LỆCH TRỤC)
-    for (let iter = 0; iter < 150; iter++) {
-      nodes.forEach((node) => {
-        node.vx = 0;
-        node.vy = 0;
-      });
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = 0; j < nodes.length; j++) {
-          if (i === j) continue;
-          let u = nodes[i];
-          let v = nodes[j];
-          let dx = u.x - v.x;
-          let dy = u.y - v.y;
-          let d = sqrt(dx * dx + dy * dy) || 1;
-
-          if (d < 160) {
-            let force = ((160 - d) / d) * 0.6;
-            u.vx += dx * force;
-            u.vy += dy * force;
-          }
-
-          // Ép lệch trục ít nhất 50px để tránh thẳng hàng tuyệt đối
-          if (abs(dx) < 50) u.vx += (dx >= 0 ? 1 : -1) * 8;
-          if (abs(dy) < 50) u.vy += (dy >= 0 ? 1 : -1) * 8;
-        }
-      }
-      nodes.forEach((node) => {
-        node.x += node.vx;
-        node.y += node.vy;
-        node.vx *= 0.35;
-        node.vy *= 0.35;
-        node.x = constrain(node.x, 120, width - 120);
-        node.y = constrain(node.y, 200, height - 100);
-      });
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          let u = nodes[i];
-          let v = nodes[j];
-
-          if (dist(u.x, u.y, v.x, v.y) < 30) {
-            u.x += random(-10, 10);
-            u.y += random(-10, 10);
-            v.x += random(-10, 10);
-            v.y += random(-10, 10);
-          }
-        }
-      }
-    }
-
-    // 🔥 5. NỐI CẠNH (KIỂM TRA ĐỈNH CHẶN ĐƯỜNG)
-    edges = [];
-    let attempts = 0;
-
-    // 5.1 Tạo cây khung (Spanning Tree) để liên thông
-    let connected = [nodes[0]];
-    let remaining = nodes.slice(1);
-    while (remaining.length > 0) {
-      let uIdx = floor(random(connected.length));
-      let vIdx = floor(random(remaining.length));
-      let u = connected[uIdx];
-      let v = remaining[vIdx];
-
-      // CHỈ NỐI NẾU KHÔNG CÓ ĐỈNH NÀO NẰM GIỮA U VÀ V
-      if (isPathClearOfNodes(u, v, nodes)) {
-        edges.push({ u: u.id, v: v.id });
-        connected.push(v);
-        remaining.splice(vIdx, 1);
-      }
-      attempts++;
-      if (attempts > 500) break; // Tránh treo máy
-    }
-
-    // 5.2 Thêm cạnh ngẫu nhiên (Tỉ lệ 1.3n)
-    let targetEdges = floor(n * 1.3);
-    let extraAttempts = 0;
-    while (edges.length < targetEdges && extraAttempts < 1000) {
-      let u = nodes[floor(random(n))];
-      let v = nodes[floor(random(n))];
-
-      if (u.id !== v.id) {
-        let exists = edges.some(
-          (e) =>
-            (e.u === u.id && e.v === v.id) || (e.v === u.id && e.u === v.id),
-        );
-        if (!exists && dist(u.x, u.y, v.x, v.y) > 140) {
-          // KIỂM TRA ĐỈNH CHẶN ĐƯỜNG + GÓC ĐẸP
-          if (
-            isPathClearOfNodes(u, v, nodes) &&
-            checkDoubleAngle(u, v, edges)
-          ) {
-            edges.push({ u: u.id, v: v.id });
-          }
-        }
-      }
-      extraAttempts++;
-    }
-
-    rebuildGraph();
-    addLog(`Đã sinh đồ thị ${n} đỉnh`, true);
+  let n = parseInt(input);
+  if (isNaN(n) || n < 1) {
+    alert("Vui lòng nhập một số nguyên hợp lệ!");
+    return;
   }
+
+  nodes = [];
+  edges = [];
+
+  let centerX = width / 2;
+  let centerY = height / 2 + 50;
+
+  // 🔥 1. TÍNH TOÁN LƯỚI ĐỘNG (Sửa lỗi dính khi n > 20)
+  // Tạo số ô lưới nhiều hơn số đỉnh 50% để luôn có khoảng trống
+  let cols = ceil(sqrt(n * 1.5));
+  let rows = ceil(n / cols) + 1;
+  let slots = [];
+  for (let c = 0; c < cols; c++) {
+    for (let r = 0; r < rows; r++) slots.push({ c, r });
+  }
+  slots.sort(() => Math.random() - 0.5);
+
+  // Tính khoảng cách giữa các ô dựa trên kích thước màn hình
+  let spacingX = (width - 250) / cols;
+  let spacingY = (height - 300) / rows;
+
+  for (let i = 0; i < n; i++) {
+    let slot = slots[i]; // Mỗi đỉnh lấy 1 ô duy nhất, không trùng
+    nodes.push({
+      id: i + 1,
+      x: centerX + (slot.c - cols / 2) * spacingX + random(-10, 10),
+      y: centerY + (slot.r - rows / 2) * spacingY + random(-10, 10),
+      color: "#ffffff",
+      vx: 0,
+      vy: 0,
+    });
+  }
+
+  // 🔥 2. THUẬT TOÁN LỰC ĐẨY (Cân bằng lại lực cho n lớn)
+  let iterations = n > 30 ? 200 : 150; // Tăng vòng lặp nếu đỉnh quá nhiều
+  for (let iter = 0; iter < iterations; iter++) {
+    nodes.forEach((node) => {
+      node.vx = 0;
+      node.vy = 0;
+    });
+
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        let u = nodes[i];
+        let v = nodes[j];
+        let dx = u.x - v.x;
+        let dy = u.y - v.y;
+        let d = sqrt(dx * dx + dy * dy) || 1;
+
+        // Giảm dần khoảng cách đẩy nếu n quá lớn để không bị văng khỏi màn hình
+        let pushDist = n > 30 ? 120 : 160;
+        if (d < pushDist) {
+          let force = ((pushDist - d) / d) * 0.5;
+          u.vx += dx * force;
+          u.vy += dy * force;
+          v.vx -= dx * force;
+          v.vy -= dy * force;
+        }
+
+        // Ép lệch trục (Chống thẳng hàng)
+        if (abs(dx) < 40) {
+          u.vx += (dx >= 0 ? 1 : -1) * 5;
+          v.vx -= (dx >= 0 ? 1 : -1) * 5;
+        }
+        if (abs(dy) < 40) {
+          u.vy += (dy >= 0 ? 1 : -1) * 5;
+          v.vy -= (dy >= 0 ? 1 : -1) * 5;
+        }
+      }
+    }
+
+    nodes.forEach((node) => {
+      node.x += node.vx;
+      node.y += node.vy;
+      node.vx *= 0.35;
+      node.vy *= 0.35;
+      node.x = constrain(node.x, 100, width - 100);
+      node.y = constrain(node.y, 180, height - 100);
+    });
+  }
+
+  // 🔥 3. XỬ LÝ VA CHẠM CỨNG (Bước cuối cùng để chắc chắn không đè nhau)
+  for (let k = 0; k < 5; k++) {
+    // Chạy lại vài lần để gỡ rối
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        let u = nodes[i];
+        let v = nodes[j];
+        let d = dist(u.x, u.y, v.x, v.y);
+        if (d < 45) {
+          // 45px là khoảng cách an toàn (2 * radius + buffer)
+          let angle = atan2(v.y - u.y, v.x - u.x);
+          let overlap = 45 - d;
+          u.x -= cos(angle) * (overlap / 2);
+          u.y -= sin(angle) * (overlap / 2);
+          v.x += cos(angle) * (overlap / 2);
+          v.y += sin(angle) * (overlap / 2);
+        }
+      }
+    }
+  }
+
+  // --- GIỮ NGUYÊN PHẦN NỐI CẠNH ---
+  edges = [];
+  let connected = [nodes[0]];
+  let remaining = nodes.slice(1);
+  let connAttempts = 0;
+  while (remaining.length > 0 && connAttempts < 2000) {
+    let u = random(connected);
+    let vIdx = floor(random(remaining.length));
+    let v = remaining[vIdx];
+    if (isPathClearOfNodes(u, v, nodes)) {
+      edges.push({ u: u.id, v: v.id });
+      connected.push(v);
+      remaining.splice(vIdx, 1);
+    }
+    connAttempts++;
+  }
+
+  let targetEdges = floor(n * 1.3);
+  let extraAttempts = 0;
+  while (edges.length < targetEdges && extraAttempts < 1000) {
+    let u = nodes[floor(random(n))];
+    let v = nodes[floor(random(n))];
+    if (u.id !== v.id) {
+      let exists = edges.some(
+        (e) => (e.u === u.id && e.v === v.id) || (e.v === u.id && e.u === v.id),
+      );
+      if (!exists && dist(u.x, u.y, v.x, v.y) > 130) {
+        if (isPathClearOfNodes(u, v, nodes) && checkDoubleAngle(u, v, edges)) {
+          edges.push({ u: u.id, v: v.id });
+        }
+      }
+    }
+    extraAttempts++;
+  }
+
+  rebuildGraph();
+  addLog(`Đã tạo đồ thị ${n} đỉnh ngẫu nhiên.`, true);
 }
 
 function isPathClearOfNodes(u, v, allNodes) {
@@ -588,8 +533,18 @@ function isAngleClear(pivot, target, currentEdges, minAngle) {
 
 // BỔ SUNG LOGIC ĐIỀU KHIỂN CHẠY AUTO/STEP
 function toggleSpeedControl() {
+  const runMode = document.getElementById("runMode").value;
+
+  // Hiển thị thanh tốc độ nếu là chế độ auto
   document.getElementById("speedControl").style.display =
-    document.getElementById("runMode").value === "auto" ? "block" : "none";
+    runMode === "auto" ? "block" : "none";
+
+  // Chuyển đổi giá trị sang tiếng Việt cho dễ đọc trong Log
+  const modeName =
+    runMode === "auto" ? "Tự động (Auto)" : "Từng bước (Step-by-step)";
+
+  // Thêm Log thông báo
+  addLog(`⚙️ Đã chuyển sang chế độ chạy: ${modeName}`, true);
 }
 
 async function waitForStep() {
@@ -641,7 +596,7 @@ async function startDFS() {
   resetColors();
   traveler.currentId = s;
   lastPos = s;
-  addLog(`-- BẮT ĐẦU DFS TỪ ĐỈNH ${s} --`, true);
+  addLog(`--- BẮT ĐẦU DFS TỪ ĐỈNH ${s} ---`, true);
 
   let chuaxet = new Array(nodes.length + 1).fill(true);
   let stack = [];
@@ -662,8 +617,12 @@ async function startDFS() {
   addLog(`Thăm đỉnh ${s}`);
 
   await waitForStep();
+  if (!isRunning) return;
 
   while (stack.length > 0) {
+    if (!isRunning) {
+      return;
+    }
     let u = stack.pop();
     stackUI.pop();
     updateStackUI([...stackUI]);
@@ -693,12 +652,14 @@ async function startDFS() {
 
         // animation
         await animateTravel(u, v);
+        if (!isRunning) return;
         traveler.currentId = v;
 
         updateStatus(`Đang thăm đỉnh ${v}`);
         addLog(`Thăm đỉnh ${v}`);
 
         await waitForStep();
+        if (!isRunning) return;
 
         found = true;
         break;
@@ -714,12 +675,14 @@ async function startDFS() {
         let prev = stack[stack.length - 1];
 
         await animateTravel(u, prev);
+        if (!isRunning) return;
         traveler.currentId = prev;
 
         addLog(`Quay lui từ đỉnh ${u} về ${prev}`);
         updateStatus(`Quay lui từ đỉnh ${u} về ${prev}`);
 
         await waitForStep();
+        if (!isRunning) return;
       }
 
       updateStackUI([...stack]);
@@ -731,6 +694,7 @@ async function startDFS() {
 
   updateStackUI([]);
   await waitForStep();
+  if (!isRunning) return;
   isRunning = false;
 }
 
@@ -739,10 +703,11 @@ async function findComponents() {
 
   isRunning = true;
   resetColors();
-  addLog("-- TÌM THÀNH PHẦN LIÊN THÔNG --", true);
+  addLog("--- TÌM THÀNH PHẦN LIÊN THÔNG ---", true);
 
   let chuaxet = new Array(nodes.length + 1).fill(true);
   let count = 0;
+  let allComponents = [];
   let colors = ["#9b59b6"];
   let lastPos = null;
 
@@ -757,6 +722,7 @@ async function findComponents() {
   for (let i of checkOrder) {
     if (chuaxet[i]) {
       count++;
+      let currentTPLT = [];
 
       let stack = [];
       let stackUI = [];
@@ -768,6 +734,7 @@ async function findComponents() {
       addLog(`PUSH đỉnh ${i} vào stack`);
 
       chuaxet[i] = false;
+      currentTPLT.push(i);
 
       traveler.currentId = i;
       updateStatus(`TPLT ${count} bắt đầu từ ${i}`);
@@ -776,8 +743,12 @@ async function findComponents() {
       nodes[i - 1].color = colors[(count - 1) % colors.length];
       addLog(`Đỉnh ${i} ∈ TPLT ${count}`);
       await waitForStep();
+      if (!isRunning) return;
 
       while (stack.length > 0) {
+        if (!isRunning) {
+          return;
+        }
         let u = stack.pop();
         stackUI.pop();
         updateStackUI([...stackUI]);
@@ -792,6 +763,7 @@ async function findComponents() {
 
             // 🔥 đánh dấu ngay khi thăm
             chuaxet[v] = false;
+            currentTPLT.push(v);
 
             // 🔥 PUSH lại u rồi PUSH v
             stack.push(u);
@@ -807,10 +779,12 @@ async function findComponents() {
             nodes[v - 1].color = colors[(count - 1) % colors.length];
 
             await animateTravel(u, v);
+            if (!isRunning) return;
             traveler.currentId = v;
 
             addLog(`Đỉnh ${v} ∈ TPLT ${count}`);
             await waitForStep();
+            if (!isRunning) return;
 
             found = true;
             break;
@@ -825,24 +799,31 @@ async function findComponents() {
             let prev = stack[stack.length - 1];
 
             await animateTravel(u, prev);
+            if (!isRunning) return;
             traveler.currentId = prev;
 
             addLog(`Quay lui từ đỉnh ${u} về ${prev}`);
             await waitForStep();
+            if (!isRunning) return;
           }
         }
       }
-
+      allComponents.push(currentTPLT);
       updateStatus(`XONG TPLT ${count}`);
       await waitForStep();
+      if (!isRunning) return;
     }
   }
-
-  updateStatus(`Tổng: ${count} thành phần liên thông`);
+  let resultText = allComponents
+    .map((comp) => `{${comp.sort((a, b) => a - b).join(",")}}`)
+    .join(", ");
+  updateStatus(`Tổng: ${count} thành phần liên thông: ${resultText}`);
   addLog(`Tổng: ${count} thành phần liên thông`, true);
+  addLog(`Chi tiết: ${resultText}`, true);
 
   updateStackUI([]);
   await waitForStep();
+  if (!isRunning) return;
   isRunning = false;
 }
 
@@ -868,7 +849,6 @@ async function findPath() {
   let stackUI = [];
 
   let lastPos = s;
-  let found = false;
 
   // 🔥 push đỉnh đầu
   stack.push(s);
@@ -882,18 +862,16 @@ async function findPath() {
   traveler.currentId = s;
   addLog(`Thăm đỉnh ${s}`);
   await waitForStep();
+  if (!isRunning) return;
 
   while (stack.length > 0) {
+    if (!isRunning) {
+      return;
+    }
     let u = stack.pop();
     stackUI.pop();
     updateStackUI([...stackUI]);
     addLog(`POP đỉnh ${u} khỏi stack`);
-
-    if (u === e) {
-      found = true;
-      addLog(`Đã tới đỉnh ${e}`, true);
-      break;
-    }
 
     let neighbors = [...nodes[u - 1].adj].sort((a, b) => a - b);
     let goDeeper = false;
@@ -917,11 +895,19 @@ async function findPath() {
         updateStackUI([...stackUI]);
 
         await animateTravel(lastPos, v);
+        if (!isRunning) return;
         lastPos = v;
 
         nodes[v - 1].color = "#2284e6";
         addLog(`Thăm đỉnh ${v}`);
+        if (v === e) {
+          addLog(
+            `🚩 Đã chạm tới đích ${e}, tiếp tục duyệt DFS cho xong...`,
+            true,
+          );
+        }
         await waitForStep();
+        if (!isRunning) return;
 
         goDeeper = true;
         break;
@@ -937,16 +923,18 @@ async function findPath() {
         let prev = stack[stack.length - 1];
 
         await animateTravel(lastPos, prev);
+        if (!isRunning) return;
         lastPos = prev;
 
         addLog(`Quay lui từ đỉnh ${u} về ${prev}`);
         await waitForStep();
+        if (!isRunning) return;
       }
     }
   }
 
   // 🔥 truy vết đường đi
-  if (found) {
+  if (parent[e] !== null || s === e) {
     let path = [];
     let cur = e;
 
@@ -970,6 +958,7 @@ async function findPath() {
 
   updateStackUI([]);
   await waitForStep();
+  if (!isRunning) return;
   isRunning = false;
 }
 
@@ -1171,13 +1160,27 @@ function updateStackUI(s) {
     return;
   }
 
-  // 1. Cập nhật nội dung (Đảo ngược để đỉnh nằm trên cùng)
   container.innerHTML = s
-    .slice()
-    .reverse()
-    .map((id) => `<div class="stack-item">Đỉnh ${id}</div>`)
-    .join("");
+    .map((id) => `<div class="stack-item">${id}</div>`)
+    .join('<span class="stack-separator">, </span>');
 }
+
+// function updateStackUI(s) {
+//   let container = document.getElementById("stack-visual");
+//   if (!container) return;
+
+//   if (!s || s.length === 0) {
+//     container.innerHTML = "";
+//     return;
+//   }
+
+//   // 1. Cập nhật nội dung (Đảo ngược để đỉnh nằm trên cùng)
+//   container.innerHTML = s
+//     .slice()
+//     .reverse()
+//     .map((id) => `<div class="stack-item">Đỉnh ${id}</div>`)
+//     .join("");
+// }
 
 function setMode(m) {
   mode = m;
@@ -1198,6 +1201,31 @@ function changeGraphType() {
   addLog(`Đã chuyển sang đồ thị ${isDirected ? "có hướng" : "vô hướng"}`, true);
 }
 
+function stopAlgorithm() {
+  // 1. Hạ cờ isRunning để các vòng lặp async tự thoát
+  isRunning = false;
+
+  // 2. Dừng nhân vật di chuyển
+  if (traveler) {
+    traveler.active = false;
+  }
+
+  // 3. Reset màu sắc đỉnh về trắng (#ffffff)
+  nodes.forEach((n) => (n.color = "#ffffff"));
+
+  // 4. Đưa nhân vật về vị trí đỉnh 1 (nếu có)
+  if (nodes.length > 0) {
+    traveler.currentId = nodes[0].id;
+    traveler.x = nodes[0].x;
+    traveler.y = nodes[0].y;
+  }
+
+  // 5. Làm sạch giao diện Stack và Trạng thái
+  updateStackUI([]);
+  updateStatus("Đã dừng thuật toán và đặt lại về trạng thái ban đầu");
+  addLog("Đã dừng thuật toán và đặt lại về trạng thái ban đầu", true);
+}
+
 function resetGraph() {
   if (isRunning) return;
   if (confirm("Bạn có chắc chắn muốn xóa toàn bộ đồ thị không?")) {
@@ -1206,7 +1234,7 @@ function resetGraph() {
     isRunning = false;
     isPaused = false;
     selectedNode = null;
-    updateStatus("Sẵn sàng.");
+    updateStatus("Sẵn sàng");
     updateStackUI([]);
     if (traveler) traveler.currentId = null;
     let logBox = document.getElementById("log-box");
